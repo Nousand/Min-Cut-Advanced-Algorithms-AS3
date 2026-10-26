@@ -6,6 +6,45 @@
 #include <vector>
 #include <utility>
 
+
+// We need to define the unionFind structure as I will be following the implementation of Krager recommended from the slides
+// where we adapt it to follow the already seen algorithm from week 5 of Kruskal MST
+
+struct UnionFind{
+    std::vector<int> parent; // Vertex that points to v
+    std::vector<int> size; // How many vertices are in the group whose root is r
+    int components;
+
+    UnionFind(int n) : parent(n), size(n,1), components(n){
+        for(int i = 0; i < n; i++){
+            parent[i] = i; // Each node is its own parent
+        }
+    }
+    // Find returns the name of the super vertex p belongs to
+    int find(int p){
+        while(parent[p] != p){
+            p = parent[p];
+        }
+        return p;
+    }
+    // Unite merges the two super vertex
+    int unite(int p, int q){
+        int rp = find(p);
+        int rq = find(q);
+        if(rp == rq) return false;
+        if(size[rp] < size[rq]){
+            // We reorder their values so that the first tree is bigger than the second as this one is the onw we will be linking to the first.
+            int z = rp;
+            rp = rq;
+            rq = z;
+        }
+        parent[rq] = rp;
+        size[rp] = size[rp] + size[rq];
+        components--;
+        return true;
+    }
+}
+
 // This is the main loop through which we call Karger and compare the cuts obtained in each of the t iterations
 int mainloop(int t, int n, std::vector<std::pair<int, int>> edges, unsigned int seed ){
     // For each iteration we will need to randomnly organise the set of edges of our graph before going through them. As it was discussed
