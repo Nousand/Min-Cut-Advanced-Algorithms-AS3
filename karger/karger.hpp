@@ -12,7 +12,7 @@
 // We need to define the unionFind structure as I will be following the implementation of Karger recommended from the slides
 // where we adapt it to follow the already seen algorithm from week 5 of Kruskal MST
 
-// It was assumed that this code would only be run with connected graphs.
+// It was assumed that this code would only be run with connected and simple graphs.
 
 struct UnionFind{
     std::vector<int> parent; // Vertex that v points to
