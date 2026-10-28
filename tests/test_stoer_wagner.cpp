@@ -1,5 +1,5 @@
 // Correctness tests for Stoer-Wagner (matrix and priority queue versions).
-// Primary author: <your name>
+// Primary author: Aarav Khemani
 //
 // Build (from the repo root):
 //   g++ -std=c++17 -O2 -Wall -Wextra tests/test_stoer_wagner.cpp -o test_sw
