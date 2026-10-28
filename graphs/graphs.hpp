@@ -29,7 +29,7 @@ inline Edges make_cylce(int n){
 inline Edges make_complete(int n){
     Edges edges;
     for (int i = 0; i < n; i++){
-        for (int j = 0; j < n; j++){
+        for (int j = i + 1; j < n; j++){
             edges.push_back({i, j});
         }
     }
@@ -51,7 +51,7 @@ inline Edges make_two_clusters(int s, int k){
         edges.push_back({i, i + s});
         // Here we are connecting edges from cluster A to cluster B, but since we ensure k < s-1 this will be the minimal cut.
     }
-    return edges
+    return edges;
 }
 
 
