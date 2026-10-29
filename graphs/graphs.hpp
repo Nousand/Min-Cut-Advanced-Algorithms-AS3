@@ -14,7 +14,7 @@ using Edges = std::vector<std::pair<int, int>>;
 // First builder constructs a cycle graph where each vertex has degree 2, the previous and next vertex
 // Here we can determine the number of vertices of the graph. Min cut = 2.
 
-inline Edges make_cylce(int n){
+inline Edges make_cycle(int n){
     Edges edges;
     for (int i= 0; i < n; i++){
         edges.push_back({i, (i+1) % n});
