@@ -45,7 +45,7 @@ static void check_both(const char* what, int n, const Edges& edges, int expected
 int main() {
     // 1. Graphs with a known answer
     for (int n = 3; n <= 60; ++n) {
-        check_both("cycle", n, make_cylce(n), 2);
+        check_both("cycle", n, make_cycle(n), 2);
         check_both("complete", n, make_complete(n), n - 1);
         Edges path, star;
         for (int i = 0; i + 1 < n; ++i) path.push_back({i, i + 1});
