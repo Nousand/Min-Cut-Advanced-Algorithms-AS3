@@ -95,7 +95,7 @@ static void time_instance(std::ofstream& out, const std::string& family, int n, 
     };
     Timing a = time_it([&] { return stoer_wagner(n, edges); }, TIMING_REPS);
     Timing b = time_it([&] { return stoer_wagner_pq(n, edges); }, TIMING_REPS);
-    Timing c = time_it([&] { return karger_min_cut(n, edges, t, SEED + n); }, KARGER_REPS);
+    Timing c = time_it([&] { return karger_min_cut(n, edges, t, 7u * SEED + n); }, KARGER_REPS); // I changed the seed's value for Karger's timings runs
     row("stoer_wagner_matrix", 1, a, TIMING_REPS);
     row("stoer_wagner_pq", 1, b, TIMING_REPS);
     row("karger", t, c, KARGER_REPS);
@@ -135,6 +135,9 @@ int main() {
     if (!tout || !sout) { std::fprintf(stderr, "Cannot open results/ files (does the results/ folder exist?)\n"); return 1; }
     tout << "family,n,m,algorithm,runs,median_us,min_us,reps,result,exact\n";
     sout << "family,n,m,exact,trials,successes,p_hat,ci_lo,ci_hi,bound,t_formula,t_needed\n";
+    // A third results file stores Karger's success rate on two-cluster graphs as the cut size k grows
+    std::ofstream kout("results/bench_ksweep.csv");
+    kout << "family,n,m,exact,trials,successes,p_hat,ci_lo,ci_hi,bound,t_formula,t_needed\n";
 
     // Experiment 1: time to reach ~99% success. Sizes are small because Karger needs ~2.3 n^2 runs.
     for (int n : {20, 40, 80, 160})
@@ -152,6 +155,13 @@ int main() {
         success_instance(sout, "random_m=3n", n, make_random_graph(n, 3 * n, SEED + n));
         success_instance(sout, "random_dense", n, make_random_graph(n, n * (n - 1) / 4, SEED + n));
     }
+
+    // Experiment 3: two-cluster graphs with a growing planted cut k (prediction 4)
+    const int cluster_size = 20;
+    for (int k : {1, 2, 4, 8, 12, 16, 18})
+        success_instance(kout, "two_clusters_s=20_k=" + std::to_string(k), 2 * cluster_size,
+                         make_two_clusters(cluster_size, k));
+
     std::puts("\nWrote results/bench_time.csv and results/bench_success.csv");
     return 0;
 }

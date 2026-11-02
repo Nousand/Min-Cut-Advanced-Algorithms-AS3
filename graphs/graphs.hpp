@@ -23,7 +23,7 @@ inline Edges make_cycle(int n){
 }
 
 // Complete graph: every possible pair of vertices is joined once. Min cut = n-1. It is interesting as it is the most possible dense graph.
-// We expect Karger to be more precise for this kind of graphs, without its efficiency taking a big toll, while Stoer-Wagner and karger-Stein
+// We expect Karger to be more precise for this kind of graphs, without its efficiency taking a big toll, while Stoer-Wagner and karger
 // drastically decreasing in performance.
 
 inline Edges make_complete(int n){
@@ -37,7 +37,7 @@ inline Edges make_complete(int n){
 }
 
 // Two complete graphs of s vertices each, joined by k edges st 1 <= k < s-1 so that min cut = k.
-// Cluster A formed by vertices 0, ..., s-1 and cluster B with 0, ..., s-1 st n = 2s.
+// Cluster A formed by vertices 0, ..., s-1 and cluster B with s, ..., 2s-1 st n = 2s.
 
 inline Edges make_two_clusters(int s, int k){
     Edges edges;
@@ -70,7 +70,7 @@ inline Edges make_random_graph(int n, int m, unsigned int seed){
         used.insert({j, i});
     }
 
-    // After, we just need to randomly assign the remaining m - n edges to our graph
+    // After, we just need to randomly assign the remaining m - (n - 1) edges to our graph
     std::uniform_int_distribution<int> pick(0, n - 1); // we define the range of number we want each round
     while((int)edges.size() < m){
         int u = pick(rng); // It gives a random integer in range [0, n-1]

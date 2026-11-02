@@ -60,3 +60,27 @@ ax.set_xlabel("Number of vertices n"); ax.set_ylabel("Runs needed for 99% succes
 ax.set_title("Karger repetitions: observed vs worst-case formula")
 ax.grid(True, which="both", alpha=0.3); ax.legend(fontsize=7)
 fig.tight_layout(); fig.savefig("results/all_repetitions.png", dpi=200); plt.close(fig); print("wrote results/all_repetitions.png")
+
+# Plotting logic for experiment 3, written with the help of Claude (Sonet 5.5)
+
+k_df = pd.read_csv("results/bench_ksweep.csv")
+k_df["k"] = k_df["family"].str.extract(r"k=(\d+)", expand=False).astype(int)
+
+def predicted_lower_bound(s, k):
+    n, c = 2 * s, 2 * k / (s - 1)
+    p = 1.0
+    for j in range(1, n - 1):
+        p *= j / (j + c)
+    return p
+
+k_df["predicted"] = [predicted_lower_bound(20, k) for k in k_df["k"]]
+
+fig, ax = plt.subplots(figsize=(6.5, 4.5))
+ax.errorbar(k_df["k"], k_df["p_hat"], yerr=[k_df["p_hat"] - k_df["ci_lo"], k_df["ci_hi"] - k_df["p_hat"]],
+            marker="o", capsize=3, label="measured")
+ax.plot(k_df["k"], k_df["predicted"], "s--", label="predicted lower bound")
+ax.axhline(k_df["bound"].iloc[0], color="k", linestyle=":", label="general bound 2/(n(n-1))")
+ax.set_yscale("log")
+ax.set_xlabel("Cut size k (two clusters of s = 20)"); ax.set_ylabel("Success probability of ONE Karger run")
+ax.set_title("Karger success vs planted cut size"); ax.grid(True, which="both", alpha=0.3); ax.legend()
+fig.tight_layout(); fig.savefig("results/ksweep.png", dpi=200); plt.close(fig); print("wrote results/ksweep.png")
