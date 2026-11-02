@@ -61,7 +61,7 @@ ax.set_title("Karger repetitions: observed vs worst-case formula")
 ax.grid(True, which="both", alpha=0.3); ax.legend(fontsize=7)
 fig.tight_layout(); fig.savefig("results/all_repetitions.png", dpi=200); plt.close(fig); print("wrote results/all_repetitions.png")
 
-# Plotting logic for experiment 3, written with the help of Claude (Sonet 5.5)
+# Plotting logic for experiment 3, written with the help of Claude (Opus 5.5)
 
 k_df = pd.read_csv("results/bench_ksweep.csv")
 k_df["k"] = k_df["family"].str.extract(r"k=(\d+)", expand=False).astype(int)

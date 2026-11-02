@@ -23,8 +23,6 @@ inline Edges make_cycle(int n){
 }
 
 // Complete graph: every possible pair of vertices is joined once. Min cut = n-1. It is interesting as it is the most possible dense graph.
-// We expect Karger to be more precise for this kind of graphs, without its efficiency taking a big toll, while Stoer-Wagner and karger
-// drastically decreasing in performance.
 
 inline Edges make_complete(int n){
     Edges edges;
