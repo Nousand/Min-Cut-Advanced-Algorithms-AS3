@@ -104,29 +104,25 @@ inline TreePacking karger_tree_packing(
 //
 // For a fixed spanning tree T, every cut crosses at least one tree edge.
 // Karger's key observation is that a minimum cut is crossed by at most two
-// edges of at least one tree in a sufficiently large packing.  This helper
-// enumerates, for every tree in the packing, all cuts that cross at most two
-// tree edges and returns the smallest one found.
+// edges of at least one tree in a sufficiently large packing.
 //
-// Removing one tree edge splits T into two parts; removing two tree edges
-// splits T into three parts, and the unique cut crossing exactly those two
-// edges is the "middle" part.  The enumeration below is O(k * n^2 * m) for a
-// packing of k trees, which is fine for the small/medium graphs used in the
-// tests; Karger's near-linear implementation replaces this enumeration with a
-// dynamic program on the tree.
-
-namespace karger_tree_packing_detail {
-
-inline int cut_size(const std::vector<std::pair<int, int>>& edges,
-                    const std::vector<char>& side) {
-    int cut = 0;
-    for (const auto& e : edges) {
-        if (side[e.first] != side[e.second]) ++cut;
-    }
-    return cut;
-}
-
-}  // namespace karger_tree_packing_detail
+// We avoid link-cut trees and dynamic LCA structures.  Instead, for every tree
+// we root it once with an ordinary DFS and use array-based subtree sums:
+//
+//   * 1-respecting cuts are obtained from cut[subtree(v)].
+//   * For 2-respecting cuts, fix one tree edge e_a and let A be the subtree
+//     below it.  For every other edge e_b whose child is not an ancestor of a,
+//     the middle piece of the cut is either A \ subtree(b) or its complement's
+//     difference with subtree(b).  In both cases
+//
+//         cut(middle) = cut(A) + cut(subtree(b)) - 2 * cross[b],
+//
+//     where cross[b] counts graph edges from subtree(b) to the opposite side
+//     of e_a.  The array cross[] is built with one DFS and a bottom-up sum.
+//
+// This gives O(k * n * (n + m)) for a packing of k trees.  With k = O(log n)
+// that is the simplified O(n^2 log n) / O(m n log n) routine, instead of the
+// near-linear implementation that needs a link-cut tree.
 
 // Returns the smallest cut found by inspecting all cuts that are 1- or
 // 2-respecting with respect to a tree in `packing`.  Every returned value is
@@ -135,33 +131,27 @@ inline int cut_size(const std::vector<std::pair<int, int>>& edges,
 inline int karger_tree_packing_min_cut(
     int n, const std::vector<std::pair<int, int>>& edges,
     const TreePacking& packing) {
-    using karger_tree_packing_detail::cut_size;
-
     if (n <= 1) return 0;
 
     int best = static_cast<int>(edges.size());
-    std::vector<char> side(n);
 
     for (const auto& tree : packing.trees) {
-        // Adjacency of the tree, with the position of the tree edge used to
-        // reach each neighbour.
-        std::vector<std::vector<std::pair<int, int>>> adj(n);
-        for (int pos = 0; pos < static_cast<int>(tree.size()); ++pos) {
-            int u = edges[tree[pos]].first;
-            int v = edges[tree[pos]].second;
-            adj[u].push_back({v, pos});
-            adj[v].push_back({u, pos});
+        // Adjacency of the packed tree.
+        std::vector<std::vector<int>> adj(n);
+        for (int edge_index : tree) {
+            int u = edges[edge_index].first;
+            int v = edges[edge_index].second;
+            adj[u].push_back(v);
+            adj[v].push_back(u);
         }
 
-        // Root the tree at vertex 0 and compute DFS entry/exit times.  The
-        // subtree of a vertex v is exactly the interval [tin[v], tout[v]).
+        // Root the tree at vertex 0 and compute DFS order / subtree intervals.
         std::vector<int> parent(n, -1);
         std::vector<int> tin(n, 0), tout(n, 0), subtree_size(n, 1);
         std::vector<int> dfs_order;
         dfs_order.reserve(n);
 
-        // Iterative DFS preorder.  Pushing neighbours in reverse order is not
-        // required for correctness; it just makes the order predictable.
+        // Iterative DFS preorder.
         std::vector<int> stack;
         stack.push_back(0);
         parent[0] = 0;
@@ -171,15 +161,14 @@ inline int karger_tree_packing_min_cut(
             tin[v] = static_cast<int>(dfs_order.size());
             dfs_order.push_back(v);
 
-            for (const auto& next : adj[v]) {
-                int u = next.first;
+            for (int u : adj[v]) {
                 if (parent[u] != -1) continue;
                 parent[u] = v;
                 stack.push_back(u);
             }
         }
 
-        // In preorder the subtree of v occupies [tin[v], tin[v] + size[v]).
+        // In preorder, subtree(v) = [tin[v], tin[v] + size[v]).
         for (int i = n - 1; i > 0; --i) {
             int v = dfs_order[i];
             subtree_size[parent[v]] += subtree_size[v];
@@ -189,45 +178,51 @@ inline int karger_tree_packing_min_cut(
         auto is_ancestor = [&](int a, int b) {
             return tin[a] <= tin[b] && tin[b] < tout[a];
         };
+        auto in_subtree = [&](int root, int v) {
+            return tin[root] <= tin[v] && tin[v] < tout[root];
+        };
 
-        // 1-respecting cuts: one side is the subtree of a non-root vertex.
+        // cut[v] = number of graph edges leaving subtree(v), for every
+        // non-root vertex v (the root's subtree is the whole graph).
+        std::vector<int> cut(n, 0);
         for (int v = 1; v < n; ++v) {
-            std::fill(side.begin(), side.end(), 0);
-            for (int u = 0; u < n; ++u) {
-                if (tin[v] <= tin[u] && tin[u] < tout[v]) side[u] = 1;
+            int count = 0;
+            for (const auto& e : edges) {
+                if (in_subtree(v, e.first) != in_subtree(v, e.second)) ++count;
             }
-            best = std::min(best, cut_size(edges, side));
+            cut[v] = count;
+            best = std::min(best, count);
         }
 
-        // 2-respecting cuts.
+        std::vector<char> in_a(n);
+        std::vector<int> opposite(n, 0), cross(n, 0);
+
+        // Fix the first tree edge via its child vertex a.
         for (int a = 1; a < n; ++a) {
-            for (int b = a + 1; b < n; ++b) {
-                std::fill(side.begin(), side.end(), 0);
+            for (int v = 0; v < n; ++v) in_a[v] = in_subtree(a, v) ? 1 : 0;
 
-                if (is_ancestor(a, b)) {
-                    // Middle part: subtree(a) \ subtree(b).
-                    for (int u = 0; u < n; ++u) {
-                        bool in_a = tin[a] <= tin[u] && tin[u] < tout[a];
-                        bool in_b = tin[b] <= tin[u] && tin[u] < tout[b];
-                        side[u] = in_a && !in_b;
-                    }
-                } else if (is_ancestor(b, a)) {
-                    // Middle part: subtree(b) \ subtree(a).
-                    for (int u = 0; u < n; ++u) {
-                        bool in_a = tin[a] <= tin[u] && tin[u] < tout[a];
-                        bool in_b = tin[b] <= tin[u] && tin[u] < tout[b];
-                        side[u] = in_b && !in_a;
-                    }
-                } else {
-                    // Middle part: everything outside subtree(a) U subtree(b).
-                    for (int u = 0; u < n; ++u) {
-                        bool in_a = tin[a] <= tin[u] && tin[u] < tout[a];
-                        bool in_b = tin[b] <= tin[u] && tin[u] < tout[b];
-                        side[u] = !in_a && !in_b;
-                    }
+            // opposite[v] counts graph edges crossing e_a and incident to v.
+            std::fill(opposite.begin(), opposite.end(), 0);
+            for (const auto& e : edges) {
+                if (in_a[e.first] != in_a[e.second]) {
+                    ++opposite[e.first];
+                    ++opposite[e.second];
                 }
+            }
 
-                best = std::min(best, cut_size(edges, side));
+            // cross[v] = sum of opposite[x] over x in subtree(v).
+            cross = opposite;
+            for (int i = n - 1; i > 0; --i) {
+                int v = dfs_order[i];
+                cross[parent[v]] += cross[v];
+            }
+
+            // Try every second edge.  If b is an ancestor of a, the pair is
+            // handled when a and b swap roles, so skip it here.
+            for (int b = 1; b < n; ++b) {
+                if (is_ancestor(b, a)) continue;
+                int candidate = cut[a] + cut[b] - 2 * cross[b];
+                best = std::min(best, candidate);
             }
         }
     }
