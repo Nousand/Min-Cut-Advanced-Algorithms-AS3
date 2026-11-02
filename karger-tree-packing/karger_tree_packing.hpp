@@ -27,7 +27,7 @@
 #include <utility>
 #include <vector>
 
-#include "karger.hpp"  // UnionFind
+#include "../karger/karger.hpp"  // UnionFind
 
 // A packed tree is stored as the indices of its edges in the original edge
 // list.  This makes it easy to check the load of every edge and to recover the

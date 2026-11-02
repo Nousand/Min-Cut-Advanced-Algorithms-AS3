@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "../graphs/graphs.hpp"
-#include "../karger/karger_tree_packing.hpp"
+#include "../karger-tree-packing/karger_tree_packing.hpp"
 #include "../stoer_wagner/stoer_wagner.hpp"
 
 static int failures = 0;
