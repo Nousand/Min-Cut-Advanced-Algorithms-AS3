@@ -1,9 +1,11 @@
 // Correctness tests for Stoer-Wagner (matrix and priority queue versions).
 // Primary author: Aarav Khemani
 //
-// Build (from the repo root):
+// Build (from the repo root). MSVC, in a Developer PowerShell:
+//   cl /std:c++17 /O2 /EHsc tests\test_stoer_wagner.cpp /Fe:test_sw.exe
+// or g++:
 //   g++ -std=c++17 -O2 -Wall -Wextra tests/test_stoer_wagner.cpp -o test_sw
-// Run:  ./test_sw        (Windows: test_sw.exe)
+// Run:  .\test_sw.exe        (Mac/Linux: ./test_sw)
 
 #include <cstdio>
 #include <vector>

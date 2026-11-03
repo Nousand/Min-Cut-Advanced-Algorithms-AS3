@@ -1,7 +1,9 @@
 // Shared benchmark: Stoer-Wagner (matrix + priority queue), Karger, and (once it exists) tree packing.
 // Written to the group's agreed interface: n, edges, returns the min cut size as an int.
 //
-// Build (from the repo root):
+// Build (from the repo root). MSVC, in a Developer PowerShell:
+//   cl /std:c++17 /O2 /EHsc bench\bench_all.cpp /Fe:bench_all.exe
+// or g++:
 //   g++ -std=c++17 -O2 bench/bench_all.cpp -o bench_all
 // Run:
 //   ./bench_all                  (Windows: .\bench_all.exe)

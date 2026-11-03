@@ -1,7 +1,9 @@
 // Timing benchmark: Stoer-Wagner matrix version vs priority queue version.
 // Primary author: Aarav Khemani
 //
-// Build (from the repo root):
+// Build (from the repo root). MSVC, in a Developer PowerShell:
+//   cl /std:c++17 /O2 /EHsc bench\bench_stoer_wagner.cpp /Fe:bench_sw.exe
+// or g++:
 //   g++ -std=c++17 -O2 bench/bench_stoer_wagner.cpp -o bench_sw
 // Run:
 //   ./bench_sw                (Windows: .\bench_sw.exe)   -> writes results/stoer_wagner_bench.csv
