@@ -1,4 +1,4 @@
-// Correctness tests for Karger's greedy tree packing.
+// Correctness tests for Karger's randomized greedy tree packing.
 //
 // Build (from the repo root):
 //   g++ -std=c++17 -O2 -Wall -Wextra tests/test_karger_tree_packing.cpp -o test_ktp
@@ -57,37 +57,44 @@ static bool valid_packing(int n, const Edges& edges, const TreePacking& packing)
     return counted == packing.load;
 }
 
-static void check_packing(const char* what, int n, const Edges& edges, int num_trees) {
-    TreePacking packing = karger_tree_packing(n, edges, num_trees);
+static void check_packing(const char* what, int n, const Edges& edges, int num_trees,
+                          unsigned seed) {
+    TreePacking packing = karger_tree_packing(n, edges, num_trees, seed);
     check(static_cast<int>(packing.trees.size()) == num_trees, what, n, num_trees,
           static_cast<int>(packing.trees.size()));
     check(valid_packing(n, edges, packing), "valid packing", n, 1, 0);
+
+    // The same seed must reproduce the same packing.
+    TreePacking again = karger_tree_packing(n, edges, num_trees, seed);
+    check(packing.trees == again.trees, "seed reproducibility", n, 1, 0);
 }
 
-static void check_known(const char* what, int n, const Edges& edges, int expected) {
-    check_packing(what, n, edges, 2 * n);
-    int got = karger_tree_packing_min_cut(n, edges, 2 * n);
+static void check_known(const char* what, int n, const Edges& edges, int expected,
+                        unsigned seed) {
+    check_packing(what, n, edges, 2 * n, seed);
+    int got = karger_tree_packing_min_cut(n, edges, 2 * n, seed);
     check(got == expected, what, n, expected, got);
 }
 
 int main() {
     // 1. Known-answer graphs.
     for (int n = 3; n <= 30; ++n) {
-        check_known("cycle", n, make_cycle(n), 2);
-        check_known("complete", n, make_complete(n), n - 1);
+        check_known("cycle", n, make_cycle(n), 2, 2026u + n);
+        check_known("complete", n, make_complete(n), n - 1, 3026u + n);
     }
     for (int s = 4; s <= 10; ++s) {
         for (int k = 1; k < s - 1; ++k) {
-            check_known("two clusters", 2 * s, make_two_clusters(s, k), k);
+            check_known("two clusters", 2 * s, make_two_clusters(s, k), k,
+                        4026u + 2u * s + k);
         }
     }
 
     Edges path, star;
     for (int i = 0; i + 1 < 12; ++i) path.push_back({i, i + 1});
     for (int i = 1; i < 12; ++i) star.push_back({0, i});
-    check_known("path", 12, path, 1);
-    check_known("star", 12, star, 1);
-    check_known("single edge", 2, Edges{{0, 1}}, 1);
+    check_known("path", 12, path, 1, 5026u);
+    check_known("star", 12, star, 1, 6026u);
+    check_known("single edge", 2, Edges{{0, 1}}, 1, 7026u);
     std::puts("known-answer tests done");
 
     // 2. Compare the cut extracted from the packing with the exact min cut on
@@ -99,7 +106,8 @@ int main() {
             int m = (n - 1) + (rep * (max_m - (n - 1))) / 24;
             Edges edges = make_random_graph(n, m, 1000u * n + rep);
             int expected = stoer_wagner(n, edges);
-            int got = karger_tree_packing_min_cut(n, edges, 2 * n);
+            unsigned seed = 8000u + 100u * n + rep;
+            int got = karger_tree_packing_min_cut(n, edges, 2 * n, seed);
             check(got == expected, "packing vs exact", n, expected, got);
             ++trials;
         }
@@ -110,7 +118,7 @@ int main() {
     for (int n : {5, 10, 20}) {
         int m = std::min(3 * n, n * (n - 1) / 2);
         Edges edges = make_random_graph(n, m, 7u * n);
-        TreePacking packing = karger_tree_packing(n, edges, 4 * n);
+        TreePacking packing = karger_tree_packing(n, edges, 4 * n, 9000u + n);
         int exact = stoer_wagner(n, edges);
         check(valid_packing(n, edges, packing), "valid packing (larger)", n, 1, 0);
         check(packing.value() <= exact + 1e-9, "packing value <= min cut", n, exact,
@@ -120,7 +128,7 @@ int main() {
 
     // 4. A disconnected graph cannot yield a spanning tree.
     Edges disconnected = {{0, 1}, {2, 3}};
-    TreePacking none = karger_tree_packing(4, disconnected, 3);
+    TreePacking none = karger_tree_packing(4, disconnected, 3, 10026u);
     check(none.trees.empty(), "disconnected graph", 4, 0,
           static_cast<int>(none.trees.size()));
 

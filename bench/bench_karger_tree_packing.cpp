@@ -7,6 +7,7 @@
 //
 // Method: every instance is built BEFORE timing starts; each algorithm gets 1 untimed
 // warm-up run then REPS timed runs on the identical edge list; we report the median.
+// The randomized packing uses a fixed per-instance seed so benchmark runs are reproducible.
 //
 // We time:
 //   * tree_packing            : packing construction + min-cut extraction
@@ -79,10 +80,11 @@ static void run_instance(std::ofstream& out, const std::string& experiment, cons
                          int n, const Edges& edges, int num_trees) {
     int m = (int)edges.size();
     int exact = stoer_wagner(n, edges);
-    double packing_value = karger_tree_packing(n, edges, num_trees).value();
+    const unsigned seed = SEED + 131u * (unsigned)n + (unsigned)num_trees;
+    double packing_value = karger_tree_packing(n, edges, num_trees, seed).value();
 
-    Timing full = time_it([&] { return karger_tree_packing_min_cut(n, edges, num_trees); });
-    Timing pack = time_it([&] { return karger_tree_packing(n, edges, num_trees).size(); });
+    Timing full = time_it([&] { return karger_tree_packing_min_cut(n, edges, num_trees, seed); });
+    Timing pack = time_it([&] { return karger_tree_packing(n, edges, num_trees, seed).size(); });
 
     if (full.result < exact) {
         std::fprintf(stderr, "INVALID CUT on %s n=%d m=%d: tree_packing=%d < stoer_wagner=%d\n",

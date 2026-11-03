@@ -14,6 +14,10 @@
 // packing contains k trees and the largest edge load is L, scaling every tree
 // by 1/L gives a valid weighted packing of value k/L.
 //
+// The MST choice is randomized by shuffling equal-load edges before each
+// Kruskal pass.  This keeps the load-balancing rule but removes the deterministic
+// dependence on the original edge order.
+//
 // The implementation follows the same Kruskal + union-find style as the
 // contraction algorithm in karger.hpp.
 //
@@ -24,10 +28,21 @@
 
 #include <algorithm>
 #include <numeric>
+#include <random>
 #include <utility>
 #include <vector>
 
 #include "../karger/karger.hpp"  // UnionFind
+
+namespace karger_tree_packing_detail {
+
+// Fresh seed for callers that do not pass one explicitly.
+inline unsigned random_seed() {
+    static std::random_device device;
+    return device();
+}
+
+}  // namespace karger_tree_packing_detail
 
 // A packed tree is stored as the indices of its edges in the original edge
 // list.  This makes it easy to check the load of every edge and to recover the
@@ -53,24 +68,28 @@ struct TreePacking {
 
 // Builds `num_trees` spanning trees.  At every step Kruskal is run with edge
 // weight = current load, so the next tree uses the least-used edges first.
-// Ties are broken by the original edge order, which keeps the result
-// deterministic.
+// Equal-load edges are shuffled before each Kruskal pass, so the MST choice is
+// randomized instead of being tied to the original edge order.  Pass `seed` for
+// a reproducible run; omitting it uses a fresh random seed.
 //
 // If the graph is disconnected, fewer than `num_trees` trees are returned (the
 // construction stops as soon as a spanning tree cannot be completed).
 inline TreePacking karger_tree_packing(
-    int n, const std::vector<std::pair<int, int>>& edges, int num_trees) {
+    int n, const std::vector<std::pair<int, int>>& edges, int num_trees,
+    unsigned seed) {
     TreePacking packing;
     packing.load.assign(edges.size(), 0);
 
     if (n <= 1 || num_trees <= 0) return packing;
 
+    std::mt19937 rng(seed);
     std::vector<int> order(edges.size());
     std::iota(order.begin(), order.end(), 0);
 
     for (int t = 0; t < num_trees; ++t) {
-        // Kruskal: consider edges from lightest (least used) to heaviest.
-        // stable_sort preserves the previous order among equal loads.
+        // Randomize the order of equal-load edges.  stable_sort then keeps the
+        // shuffled order among ties, producing a random minimum spanning tree.
+        std::shuffle(order.begin(), order.end(), rng);
         std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
             return packing.load[a] < packing.load[b];
         });
@@ -96,6 +115,13 @@ inline TreePacking karger_tree_packing(
     }
 
     return packing;
+}
+
+// Fresh-random-seed convenience overload.
+inline TreePacking karger_tree_packing(
+    int n, const std::vector<std::pair<int, int>>& edges, int num_trees) {
+    return karger_tree_packing(n, edges, num_trees,
+                               karger_tree_packing_detail::random_seed());
 }
 
 // ---------------------------------------------------------------------------
@@ -231,9 +257,18 @@ inline int karger_tree_packing_min_cut(
 }
 
 // Convenience overload: pack `num_trees` trees and immediately extract the best
-// 1-/2-respecting cut from the resulting packing.
+// 1-/2-respecting cut from the resulting packing.  `seed` controls the
+// randomized packing; omit it for a fresh random run.
+inline int karger_tree_packing_min_cut(
+    int n, const std::vector<std::pair<int, int>>& edges, int num_trees,
+    unsigned seed) {
+    return karger_tree_packing_min_cut(
+        n, edges, karger_tree_packing(n, edges, num_trees, seed));
+}
+
+// Fresh-random-seed convenience overload.
 inline int karger_tree_packing_min_cut(
     int n, const std::vector<std::pair<int, int>>& edges, int num_trees) {
     return karger_tree_packing_min_cut(
-        n, edges, karger_tree_packing(n, edges, num_trees));
+        n, edges, num_trees, karger_tree_packing_detail::random_seed());
 }
