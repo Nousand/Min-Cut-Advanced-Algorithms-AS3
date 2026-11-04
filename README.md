@@ -67,9 +67,12 @@ cl /std:c++17 /O2 /EHsc tests\test_stoer_wagner.cpp /Fe:test_sw.exe
 
 cl /std:c++17 /O2 /EHsc tests\test_karger_tree_packing.cpp /Fe:test_ktp.exe
 .\test_ktp.exe
+
+cl /std:c++17 /O2 /EHsc tests\test_karger.cpp /Fe:test_karger.exe
+.\test_karger.exe
 ```
 
-Each program prints `ALL ... TESTS PASSED` at the end if everything is correct. `test_stoer_wagner` checks both Stoer-Wagner versions against known answers and a brute-force search on small random graphs, checks that the two versions agree, and compares Karger against the exact answer on a few graphs. `test_karger_tree_packing` checks the tree packing against known answers and Stoer-Wagner.
+Each program prints `ALL ... TESTS PASSED` at the end if everything is correct. `test_stoer_wagner` checks both Stoer-Wagner versions against known answers and a brute-force search on small random graphs, and checks that the two versions agree. `test_karger` checks that a single Karger run always finds the minimum cut on cycles, trees and a doubled-cycle multigraph, that a single run never returns less than the minimum cut, and that Karger matches known answers and Stoer-Wagner. `test_karger_tree_packing` checks the tree packing against known answers and Stoer-Wagner.
 
 ### Benchmarks and plots
 
@@ -78,6 +81,7 @@ Each program prints `ALL ... TESTS PASSED` at the end if everything is correct. 
 | Stoer-Wagner, matrix vs priority queue | `bench/bench_stoer_wagner.cpp` | `results/stoer_wagner_bench.csv` | `scripts/plot_stoer_wagner.py` | `sw_sparse.png`, `sw_dense.png`, `sw_density.png` |
 | All algorithms compared | `bench/bench_all.cpp` | `results/bench_time.csv`, `results/bench_success.csv`, `results/bench_ksweep.csv`, `results/bench_treesweep.csv` | `scripts/plot_all.py` | `all_time_sparse.png`, `all_time_dense.png`, `all_success.png`, `all_repetitions.png`, `ksweep.png`, `treesweep.png` |
 | Tree packing on its own | `bench/bench_karger_tree_packing.cpp` | `results/bench_karger_tree_packing.csv` | `scripts/plot_tree_packing.py` | `tp_scaling.png`, `tp_density.png`, `tp_trees.png` |
+| Giant super-vertex check (report Section 5.1) | `bench/check_giant.cpp` | prints to the screen | none | none |
 
 Each plot script needs the CSV files written by its benchmark, so run the benchmark first.
 
@@ -120,6 +124,8 @@ cl /std:c++17 /O2 /EHsc tests\test_stoer_wagner.cpp /Fe:test_sw.exe
 .\test_sw.exe
 cl /std:c++17 /O2 /EHsc tests\test_karger_tree_packing.cpp /Fe:test_ktp.exe
 .\test_ktp.exe
+cl /std:c++17 /O2 /EHsc tests\test_karger.cpp /Fe:test_karger.exe
+.\test_karger.exe
 
 cl /std:c++17 /O2 /EHsc bench\bench_stoer_wagner.cpp /Fe:bench_sw.exe
 .\bench_sw.exe

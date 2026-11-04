@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "../graphs/graphs.hpp"
-#include "../karger/karger.hpp"
 #include "../stoer_wagner/stoer_wagner.hpp"
 
 static int failures = 0;
@@ -88,18 +87,6 @@ int main() {
         }
     }
     std::printf("matrix vs priority queue agreement done (%d graphs)\n", big);
-
-    // 4. Sanity check of the teammate's Karger against the exact answer (probabilistic, so informational)
-    int karger_miss = 0, karger_runs = 0;
-    for (int n : {10, 20, 30}) {
-        Edges edges = make_random_graph(n, 3 * n, 99u + n);
-        int exact = stoer_wagner(n, edges);
-        int t = 3 * n * (n - 1) / 2;
-        int got = karger_min_cut(n, edges, t, 12345u);
-        ++karger_runs;
-        if (got != exact) { ++karger_miss; std::printf("note: karger gave %d, exact %d (n=%d, t=%d)\n", got, exact, n, t); }
-    }
-    std::printf("karger vs exact: %d/%d matched\n", karger_runs - karger_miss, karger_runs);
 
     if (failures == 0) std::puts("ALL STOER-WAGNER TESTS PASSED");
     else std::printf("%d FAILURES\n", failures);
