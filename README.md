@@ -4,7 +4,7 @@ Programming Assignment 2 (Advanced Algorithms): a group comparison of three algo
 
 Given a connected, undirected, unweighted graph, find the smallest number of edges whose removal disconnects it. Every algorithm returns the size of that cut.
 
-- Video: TODO link
+- Video: https://youtu.be/49uuL96k92g
 
 ## The algorithms
 
